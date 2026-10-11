@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/logo.png" alt="SharpShape logo" width="320"></p>
+
 # sharpshape
 
 Extract the small-molecule binding pockets of RNA structures and compute their descriptors, with the
@@ -25,9 +27,31 @@ RNApolis 0.4.10 and everything else from RNApolis 0.16.17.
 ## Usage
 
 ```bash
-.venv/bin/sharpshape structure.pdb [more.pdb ...] -o pockets.csv
+.venv/bin/sharpshape structure.pdb -o pockets.csv                      # one structure
 .venv/bin/sharpshape structure.pdb -o pockets.csv --pockets-dir out/   # also write each pocket as a PDB file
 ```
+
+### Many structures in one command
+
+Give as many PDB files as you like: every pocket of every structure goes into the same CSV (one row per
+pocket, columns `PDB` and `Pocket` identify it).
+
+```bash
+.venv/bin/sharpshape my_structures/*.pdb -o all_pockets.csv
+.venv/bin/sharpshape 1aju.pdb 3ski.pdb 4lvv.pdb -o all_pockets.csv
+```
+
+For a very long list (thousands of files, more than the shell accepts on one command line), run it in
+batches of 500 with `xargs`; each batch writes its own CSV (`batch_<number>.csv`):
+
+```bash
+ls my_structures/*.pdb | xargs -n 500 sh -c '.venv/bin/sharpshape "$@" -o "batch_$$.csv"' _
+```
+
+Each file is reported on the screen: `N pocket(s)`, `no pocket` (readable structure without a ligand
+pocket), or `ERROR` (file that cannot be read, e.g. mmCIF or not a structure). A summary is printed at
+the end; the CSV contains the pockets of every readable file, and the exit code is 1 if any file failed.
+Structures are processed one after the other (about 2-3 s per structure on a laptop).
 
 Options: `--cutoff` (Å, default 6.0 as in the atlas), `--level residue|atom` (whole nucleotides, as in the
 atlas, or only the atoms within the cutoff). Input: PDB format; the first model is used and hydrogens are ignored.

@@ -22,8 +22,27 @@ from .shape import classify_shape
 GEOMETRY = ["Num_Residues", "Num_Atoms", "EV1", "EV2", "EV3", "rEV21", "rEV32", "rEV31", "R_gyration"]
 
 
+def check_pdb_file(pdb_file):
+    """Raise ValueError if the file cannot be a PDB-format structure (so that it is reported as a failure,
+    not as a structure without pockets)."""
+    n_atoms, first = 0, ""
+    with open(pdb_file, errors="replace") as f:
+        for line in f:
+            first = first or line.strip()
+            if line.startswith(("ATOM", "HETATM")):
+                n_atoms += 1
+                if len(line) < 54:
+                    raise ValueError("truncated ATOM/HETATM record (coordinates missing)")
+    if n_atoms == 0:
+        if first.startswith("data_"):
+            raise ValueError("mmCIF file: only the PDB format is supported (convert it, e.g. with gemmi or PyMOL)")
+        raise ValueError("no ATOM/HETATM records: not a PDB-format structure")
+
+
 def describe_structure(pdb_file, pockets_dir, cutoff=6.0, level="residue"):
-    """List of descriptor rows (dicts) for the pockets of one PDB file; pocket files written in pockets_dir."""
+    """List of descriptor rows (dicts) for the pockets of one PDB file; pocket files written in pockets_dir.
+    Raises an error for an unreadable file; returns [] for a readable structure without pockets."""
+    check_pdb_file(pdb_file)
     rows = []
     kept = [r for r in extract.process_structure(Path(pdb_file), None, "server", set(), Path(pockets_dir),
                                                  cutoff, level) if r.get("status") == "kept"]
@@ -55,19 +74,29 @@ def main(argv=None):
     ap.add_argument("--level", choices=["residue", "atom"], default="residue",
                     help="residue: whole nucleotides (atlas); atom: only atoms within the cutoff")
     a = ap.parse_args(argv)
-    rows = []
+    rows, failed, empty = [], [], []
     with tempfile.TemporaryDirectory() as tmp:
         out_dir = a.pockets_dir or Path(tmp)
         for f in a.pdb:
             try:
                 new = describe_structure(f, out_dir, a.cutoff, a.level)
             except Exception as e:  # keep going with the other structures
-                print(f"{f}: failed ({e})", file=sys.stderr)
+                print(f"{f}: ERROR - {e}", file=sys.stderr)
+                failed.append(f)
                 continue
-            print(f"{f}: {len(new)} pocket(s)", file=sys.stderr)
+            if new:
+                print(f"{f}: {len(new)} pocket(s)", file=sys.stderr)
+            else:
+                print(f"{f}: no pocket (no ligand with >= 2 nucleotides within {a.cutoff:g} A)", file=sys.stderr)
+                empty.append(f)
             rows += new
     pd.DataFrame(rows).to_csv(a.output, index=False)
-    print(f"{len(rows)} pocket(s) written to {a.output}", file=sys.stderr)
+    n_ok = len(a.pdb) - len(failed)
+    print(f"\n{len(rows)} pocket(s) written to {a.output} | {len(a.pdb)} file(s): {n_ok} read "
+          f"({len(empty)} without pocket), {len(failed)} failed", file=sys.stderr)
+    if failed:
+        print("Failed: " + " ".join(str(f) for f in failed), file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
