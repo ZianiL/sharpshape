@@ -1,0 +1,7 @@
+.venv/
+tools/rnapolis-0.16.17/
+__pycache__/
+*.pyc
+*.egg-info/
+pockets.csv
+out/
