@@ -1,10 +1,11 @@
 """SHAPE morphological archetype of a pocket: fixed median-threshold decision tree on rEV21 / rEV32.
 
-Thresholds = medians of rEV21 and rEV32 over the non-redundant subset of the RNA pocket atlas (333 pockets).
+Thresholds = medians of rEV21 and rEV32 over the non-redundant subset of the RNA pocket atlas (331 pockets),
+used exactly (shown rounded as 0.5745 / 0.5433): the rounded values would move the median pocket to another archetype.
 rEV31 = rEV21 * rEV32 is algebraically dependent and is not used. Not a trained classifier.
 """
-MEDIAN_REV21 = 0.5744
-MEDIAN_REV32 = 0.5433
+MEDIAN_REV21 = 0.5744716108261702
+MEDIAN_REV32 = 0.5433004248765029
 
 
 def classify_shape(rev21, rev32):

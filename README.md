@@ -71,7 +71,7 @@ Pocket name: `<ligand>_<residue number>-<chain>`.
 |---|---|
 | `Num_Residues`, `Num_Atoms` | nucleotides and heavy atoms of the pocket |
 | `EV1`-`EV3`, `rEV21`, `rEV32`, `rEV31`, `R_gyration` | eigenvalues of the covariance matrix of the atom coordinates (descending), their ratios, radius of gyration = √(EV1+EV2+EV3) |
-| `archetype` | SHAPE archetype: rEV21 ≥ 0.5744 → `sphere` (rEV32 ≥ 0.5433) or `disc`; otherwise `rod` (rEV32 ≥ 0.5433) or `anisotropic`. Thresholds = medians of the atlas non-redundant subset |
+| `archetype` | SHAPE archetype: rEV21 ≥ 0.5745 → `sphere` (rEV32 ≥ 0.5433) or `disc`; otherwise `rod` (rEV32 ≥ 0.5433) or `anisotropic`. Thresholds = medians of the atlas non-redundant subset |
 | `A`, `U`, `C`, `G`, `n_modified` | nucleotide counts |
 | `step_XY` (16) | ordered dinucleotide steps along real backbone links (O3′–P ≤ 2.0 Å), 5′→3′ |
 | `GU` … `AA`, `UGG` … `GUC` | legacy panels: unordered dinucleotides and selected trinucleotides |
