@@ -104,5 +104,8 @@ extracted pockets back as pocket files (`--pocket-files`) and checks size, shape
 
 Licences as declared in each package's metadata: RNApolis (MIT), Biopython (Biopython License Agreement),
 NumPy and pandas (BSD 3-Clause), PuLP (BSD) with its bundled CBC solver (Eclipse Public License 1.0).
-Installed by `install.sh`, not redistributed here. Licence of
-this repository: to be decided.
+Installed by `install.sh`, not redistributed here.
+
+## Licence
+
+MIT licence (see `LICENSE`). The atlas data are distributed separately under CC BY 4.0 (Zenodo record of the article).

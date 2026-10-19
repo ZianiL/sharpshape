@@ -3,6 +3,7 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
+license = { text = "MIT" }
 name = "sharpshape"
 version = "1.0.0"
 description = "RNA small-molecule binding pocket extraction and descriptors (RNA pocket atlas definitions)"
