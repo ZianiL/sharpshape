@@ -5,7 +5,8 @@
 Extract the small-molecule binding pockets of RNA structures and compute their descriptors, with the
 definitions of the RNA pocket atlas (Ziani et al., in preparation) and the SHAPE eigenvalue-ratio
 archetypes (Ziani et al., *Comput. Struct. Biotechnol. J.* 2026, doi:10.34133/csbj.0022). This is the
-descriptor code of the SharpShape web server, as a command-line tool.
+descriptor code of the SharpShape web server, as a command-line tool, for complete structures or for pockets
+you have already extracted.
 
 ## Install (Linux, no root needed)
 
@@ -56,6 +57,18 @@ Structures are processed one after the other (about 2-3 s per structure on a lap
 Options: `--cutoff` (Å, default 6.0 as in the atlas), `--level residue|atom` (whole nucleotides, as in the
 atlas, or only the atoms within the cutoff). Input: PDB format; the first model is used and hydrogens are ignored.
 
+### Pockets you have already extracted
+
+```bash
+.venv/bin/sharpshape --pocket-files my_pockets/*.pdb -o pockets.csv
+```
+
+Each file is treated as one pocket: its nucleotides (A/U/G/C, and modified nucleotides recognised by their C1′
+atom) are kept, heavy atoms only, one conformer per atom; a ligand, water or ions left in the file are ignored.
+Size, shape, archetype, composition and steps are computed. Base pairs, stacking, backbone links and the
+secondary-structure motifs need the whole structure, so they are left empty: run the tool on the complete
+structure to get them. Pocket name: `<file name>_pocket`.
+
 ## Pockets
 
 A ligand is any non-polymer, non-solvent HETATM residue that is not covalently linked to the RNA backbone
@@ -84,7 +97,8 @@ Pocket name: `<ligand>_<residue number>-<chain>`.
 ## Test
 
 `tests/test_against_atlas.py` runs the tool on three public PDB entries (`tests/data/`: 1AJU, 3SKI, 4LVV)
-and compares their five atlas pockets with the atlas values (`tests/expected_atlas_pockets.csv`).
+and compares their five atlas pockets with the atlas values (`tests/expected_atlas_pockets.csv`), then gives the
+extracted pockets back as pocket files (`--pocket-files`) and checks size, shape and composition again.
 
 ## Third-party software
 

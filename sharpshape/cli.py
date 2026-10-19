@@ -6,12 +6,17 @@ nucleotides are kept and listed. One row per pocket: geometry (eigenvalues, rati
 SHAPE archetype, composition and steps, base pairs, stacking, backbone links and secondary-structure motifs.
 
   sharpshape structure.pdb [more.pdb ...] -o pockets.csv [--pockets-dir DIR] [--cutoff 6] [--level residue]
+  sharpshape --pocket-files pocket1.pdb [pocket2.pdb ...] -o pockets.csv
+
+With --pocket-files, each input is an already extracted pocket: size, shape, archetype and composition are
+computed (base pairs, stacking, backbone links and secondary-structure motifs need the whole structure).
 """
 import argparse
 import sys
 import tempfile
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from . import extract
@@ -64,6 +69,37 @@ def describe_structure(pdb_file, pockets_dir, cutoff=6.0, level="residue"):
     return rows
 
 
+def describe_pocket_file(pdb_file, pockets_dir):
+    """One descriptor row for an already extracted pocket. Kept: the nucleotides of the file (A/U/G/C, and
+    modified nucleotides recognised by their C1' atom), heavy atoms, first model, one conformer per atom
+    (highest occupancy), i.e. the atlas definition; ligand, water and ions are ignored. Base pairs, stacking,
+    backbone-dependent motifs need the whole structure and are left empty, as on the web server."""
+    check_pdb_file(pdb_file)
+    pdb_file = Path(pdb_file)
+    res = extract.read_first_model(pdb_file)
+    nts = [k for k, r in res.items() if k[3] not in extract.SOLVENT
+           and (k[3] in extract.NT or extract.atom_xyz(r, "C1'") is not None)]
+    if len(nts) < 2:
+        return None
+    nts.sort(key=lambda k: f"{k[0]}{k[3]}{k[1]}")
+    atoms = [a for k in nts for a in extract.one_conformer(res[k]["atoms"])]
+    d = Path(pockets_dir) / "pockets" / pdb_file.stem.lower() / "pocket"
+    d.mkdir(parents=True, exist_ok=True)
+    with open(d / "pocket.pdb", "w") as f:
+        f.writelines(a[4] for a in atoms)
+        f.write("END\n")
+    geo = extract.geometry(np.array([a[3] for a in atoms]))
+    resids = [f"{k[0]}{k[3]}{k[1]}" for k in nts]
+    return {
+        "PDB_Pocket": f"{pdb_file.stem.lower()}_pocket", "PDB": pdb_file.stem.lower(), "Pocket": "pocket", "LIG": "",
+        "Num_Residues": len(nts), **{k: geo[k] for k in GEOMETRY if k != "Num_Residues"},
+        "archetype": classify_shape(geo["rEV21"], geo["rEV32"]),
+        **composition(d / "pocket.pdb"),
+        "modified_nt": ";".join(f"{k[0]}{k[3]}{k[1]}" for k in nts if k[3] not in extract.NT),
+        "residues": ";".join(resids),
+    }
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="sharpshape", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -73,13 +109,19 @@ def main(argv=None):
     ap.add_argument("--cutoff", type=float, default=6.0, help="distance cutoff in A (atlas: 6.0)")
     ap.add_argument("--level", choices=["residue", "atom"], default="residue",
                     help="residue: whole nucleotides (atlas); atom: only atoms within the cutoff")
+    ap.add_argument("--pocket-files", action="store_true",
+                    help="inputs are already extracted pockets (no extraction; interactions and motifs left empty)")
     a = ap.parse_args(argv)
     rows, failed, empty = [], [], []
     with tempfile.TemporaryDirectory() as tmp:
         out_dir = a.pockets_dir or Path(tmp)
         for f in a.pdb:
             try:
-                new = describe_structure(f, out_dir, a.cutoff, a.level)
+                if a.pocket_files:
+                    row = describe_pocket_file(f, out_dir)
+                    new = [row] if row else []
+                else:
+                    new = describe_structure(f, out_dir, a.cutoff, a.level)
             except Exception as e:  # keep going with the other structures
                 print(f"{f}: ERROR - {e}", file=sys.stderr)
                 failed.append(f)
@@ -87,7 +129,8 @@ def main(argv=None):
             if new:
                 print(f"{f}: {len(new)} pocket(s)", file=sys.stderr)
             else:
-                print(f"{f}: no pocket (no ligand with >= 2 nucleotides within {a.cutoff:g} A)", file=sys.stderr)
+                why = "fewer than 2 nucleotides" if a.pocket_files else f"no ligand with >= 2 nucleotides within {a.cutoff:g} A"
+                print(f"{f}: no pocket ({why})", file=sys.stderr)
                 empty.append(f)
             rows += new
     pd.DataFrame(rows).to_csv(a.output, index=False)
