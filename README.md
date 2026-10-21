@@ -2,6 +2,11 @@
 
 # sharpshape
 
+> **Web server:** [SharpShape](https://sharpshape.rpbs.univ-paris-diderot.fr), the same pocket extraction and descriptors
+> with an interactive interface and comparison with the atlas reference pockets.
+> **Method:** Ziani et al., *Comput. Struct. Biotechnol. J.* 2026, [doi:10.34133/csbj.0022](https://doi.org/10.34133/csbj.0022).
+> **RNA pocket atlas:** Ziani et al., in preparation.
+
 Extract the small-molecule binding pockets of RNA structures and compute their descriptors, with the
 definitions of the RNA pocket atlas (Ziani et al., in preparation) and the SHAPE eigenvalue-ratio
 archetypes (Ziani et al., *Comput. Struct. Biotechnol. J.* 2026, doi:10.34133/csbj.0022). This is the
@@ -16,7 +21,7 @@ installs [uv](https://docs.astral.sh/uv/) in `~/.local/bin` (needs `curl`), whic
 ```bash
 git clone https://github.com/ZianiL/sharpshape.git
 cd sharpshape
-bash install.sh                              # ~1 GB, a few minutes
+bash install.sh                              # ~1 GB, about 1-2 minutes
 .venv/bin/python tests/test_against_atlas.py # should print 5/5 atlas pockets identical
 ```
 
@@ -105,6 +110,17 @@ extracted pockets back as pocket files (`--pocket-files`) and checks size, shape
 Licences as declared in each package's metadata: RNApolis (MIT), Biopython (Biopython License Agreement),
 NumPy and pandas (BSD 3-Clause), PuLP (BSD) with its bundled CBC solver (Eclipse Public License 1.0).
 Installed by `install.sh`, not redistributed here.
+
+## How to cite
+
+If you use sharpshape, please cite:
+
+- Ziani L, Badel A, Dufay L, Flatters D, Regad L, Camproux A-C. Eigenvalue ratios reveal shared binding pocket shapes in
+  RNA and protein structures. *Comput. Struct. Biotechnol. J.* 2026;35:0022.
+  [doi:10.34133/csbj.0022](https://doi.org/10.34133/csbj.0022)
+- the RNA pocket atlas article (Ziani et al., in preparation).
+
+GitHub's "Cite this repository" button (from `CITATION.cff`) gives the reference of this software.
 
 ## Licence
 

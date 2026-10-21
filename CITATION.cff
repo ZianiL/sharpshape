@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below, together with the method article."
+title: "sharpshape: RNA small-molecule binding pocket extraction and descriptors"
+version: 1.0.0
+license: MIT
+repository-code: "https://github.com/ZianiL/sharpshape"
+url: "https://sharpshape.rpbs.univ-paris-diderot.fr"
+authors:
+  - family-names: Ziani
+    given-names: Leïla
+  - family-names: Badel
+    given-names: Anne
+  - family-names: Pasquali
+    given-names: Samuela
+  - family-names: Flatters
+    given-names: Delphine
+  - family-names: Camproux
+    given-names: Anne-Claude
+references:
+  - type: article
+    title: "Eigenvalue Ratios Reveal Shared Binding Pocket Shapes in RNA and Protein Structures"
+    authors:
+      - family-names: Ziani
+        given-names: Leïla
+      - family-names: Badel
+        given-names: Anne
+      - family-names: Dufay
+        given-names: Léa
+      - family-names: Flatters
+        given-names: Delphine
+      - family-names: Regad
+        given-names: Leslie
+      - family-names: Camproux
+        given-names: Anne-Claude
+    journal: "Computational and Structural Biotechnology Journal"
+    volume: 35
+    year: 2026
+    doi: "10.34133/csbj.0022"
