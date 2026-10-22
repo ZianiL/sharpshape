@@ -10,17 +10,17 @@
 
 ## What it does
 
-Give it an RNA-ligand structure (PDB file); for each bound small molecule, `sharpshape`:
+Give it an RNA-ligand structure (PDB file). For each bound small molecule, `sharpshape`:
 
-1. **extracts the pocket**: the RNA nucleotides with at least one heavy atom within 6 Å of the ligand;
+1. **extracts the pocket**: the RNA nucleotides with at least one heavy atom within 6 Å of the ligand.
 2. **describes its shape**: eigenvalues of the atom coordinates, size-independent ratios (rEV21, rEV32, rEV31) and the
-   SHAPE archetype (sphere, disc, rod or anisotropic);
+   SHAPE archetype (sphere, disc, rod or anisotropic).
 3. **describes its RNA structure**: base pairs (canonical and non-canonical), stacking, backbone links,
    secondary-structure motifs (stems, loops, junctions, pseudoknots) and nucleotide composition.
 
 The definitions are exactly those of the RNA pocket atlas: on the atlas structures, the tool reproduces the atlas values
 (see [Validation](#validation)). The [web server](https://sharpshape.rpbs.univ-paris-diderot.fr) runs the same code with an
-interactive interface and compares each pocket with the reference pockets of the atlas; this repository is for local use
+interactive interface and compares each pocket with the reference pockets of the atlas. This repository is for local use
 and for many structures at once.
 
 | You want to… | Use |
@@ -36,7 +36,7 @@ and for many structures at once.
 
 ## Quick start
 
-Linux, no administrator rights needed. Requirements: `git`, `bash` and Python 3.12 (`python3.12`); if Python 3.12 is
+Linux, no administrator rights needed. Requirements: `git`, `bash` and Python 3.12 (`python3.12`). If Python 3.12 is
 missing, the installer downloads it with [uv](https://docs.astral.sh/uv/) (needs `curl`).
 
 ```bash
@@ -58,7 +58,7 @@ tests/data/4LVV.pdb: 2 pocket(s)
 2 pocket(s) written to pockets.csv | 1 file(s): 1 read (0 without pocket), 0 failed
 ```
 
-`pockets.csv` has one row per pocket (63 columns; a few of them):
+`pockets.csv` has one row per pocket (63 columns, a few of them shown here):
 
 | PDB_Pocket | Num_Residues | rEV21 | rEV32 | archetype | non.canonical.bp |
 |---|---|---|---|---|---|
@@ -89,7 +89,7 @@ i.e. chain, nucleotide, number).
 | `--pockets-dir DIR` | also write each pocket as `DIR/pockets/<pdb>/<pocket>/pocket.pdb` | not written |
 | `--pocket-files` | the inputs are already extracted pockets (no extraction) | off |
 
-**Input.** PDB format; the first model is used and hydrogens are ignored; water and ions are not treated as ligands.
+**Input.** PDB format. The first model is used and hydrogens are ignored. Water and ions are not treated as ligands.
 
 **Many structures.** Every pocket of every file goes into the same CSV (columns `PDB` and `Pocket`). Each file is
 reported on the screen: `N pocket(s)`, `no pocket` (readable structure without a ligand pocket) or `ERROR` (file that
@@ -101,13 +101,13 @@ ls my_structures/*.pdb | xargs -n 500 sh -c '.venv/bin/sharpshape "$@" -o "batch
 ```
 
 **Pockets you have already extracted** (`--pocket-files`). Each file is treated as one pocket: its nucleotides (A, U, G, C,
-and modified nucleotides recognised by their C1′ atom) are kept, heavy atoms only; a ligand, water or ions left in the file
+and modified nucleotides recognised by their C1′ atom) are kept, heavy atoms only. A ligand, water or ions left in the file
 are ignored. Size, shape, archetype, composition and steps are computed. Base pairs, stacking, backbone links and
 secondary-structure motifs need the whole structure, so they are left empty. Pocket name: `<file name>_pocket`.
 
 **What is a ligand.** Any non-polymer, non-solvent HETATM residue that is not covalently linked to the RNA backbone (a
 5′-triphosphate G or an in-chain modified nucleotide is part of the RNA). Pockets with fewer than 2 nucleotides are
-skipped. Modified nucleotides are kept in the pocket and listed (`modified_nt`); note that the atlas itself excludes
+skipped. Modified nucleotides are kept in the pocket and listed (`modified_nt`), but the atlas itself excludes
 pockets containing them. Pocket name: `<ligand>_<residue number>-<chain>`.
 
 ## Output (one row per pocket)
@@ -119,18 +119,17 @@ pockets containing them. Pocket name: `<ligand>_<residue number>-<chain>`.
 | `EV1`, `EV2`, `EV3`, `R_gyration` | eigenvalues of the covariance matrix of the atom coordinates (largest first), radius of gyration = √(EV1 + EV2 + EV3) |
 | `rEV21`, `rEV32`, `rEV31` | shape ratios EV2/EV1 (elongation), EV3/EV2 (cross-section) and EV3/EV1, between 0 and 1, independent of size |
 | `archetype` | SHAPE archetype: `sphere`, `disc`, `rod` or `anisotropic` (see below) |
-| `canonical.bp`, `non.canonical.bp` | base pairs with both nucleotides in the pocket; canonical = Watson-Crick and G-U wobble (Saenger XIX, XX, XXVIII) |
+| `canonical.bp`, `non.canonical.bp` | base pairs with both nucleotides in the pocket. Canonical: Watson-Crick and G-U wobble (Saenger XIX, XX, XXVIII) |
 | `stacking` | stacked nucleotide pairs within the pocket |
 | `covalent.bonds` | backbone links between consecutive pocket nucleotides (O3′-P ≤ 2.0 Å), not ligand bonds |
 | `stem`, `hairpin-loop`, `bulge`, `internal-loop`, `junction-loop`, `ss-non-loop`, `pseudoknotted` | 1 if at least one pocket nucleotide is in this motif, else 0 |
 | `A`, `U`, `C`, `G`, `n_modified` | nucleotide counts |
 | `step_XY` (16 columns) | ordered dinucleotide steps along backbone links, 5′→3′ |
 | `GU` … `AA`, `UGG` … `GUC` | additional panels: unordered dinucleotides and selected trinucleotides |
-| `modified_nt`, `residues` | modified nucleotides kept; list of pocket nucleotides |
+| `modified_nt`, `residues` | modified nucleotides kept, and the list of pocket nucleotides |
 
-Annotation tools: base pairs and secondary structure with RNApolis 0.16.17 (`--find-gaps --decompose-pseudoknot-free`;
-stems of at least 2 canonical pairs, including pseudoknotted stems; loops typed by number of strands), stacking with
-RNApolis 0.4.10, as in the atlas.
+Annotation tools: base pairs and secondary structure come from RNApolis 0.16.17 (`--find-gaps --decompose-pseudoknot-free`), and stacking from RNApolis 0.4.10, as in the atlas. Stems have at least 2 canonical
+pairs, including pseudoknotted stems, and loops are typed by their number of strands.
 
 ## SHAPE archetypes
 
@@ -144,7 +143,7 @@ non-redundant subset of the atlas (rEV21 = 0.5745, rEV32 = 0.5433) gives four ar
 | **rEV21 < 0.5745** | `rod` | `anisotropic` (strongly anisotropic) |
 
 The framework and its RNA/protein comparison are described in the method article (Ziani et al., *Comput. Struct.
-Biotechnol. J.* 2026); the thresholds used here are those of the RNA pocket atlas.
+Biotechnol. J.* 2026). The thresholds used here are those of the RNA pocket atlas.
 
 ## Validation
 
