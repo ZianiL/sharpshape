@@ -1,7 +1,7 @@
 """sharpshape: extract the small-molecule binding pockets of RNA structures and compute their descriptors.
 
 For each ligand (non-polymer, non-solvent HETATM residue not covalently linked to the RNA), the pocket is the
-set of nucleotides with at least one heavy atom within the cutoff (default 6 A) of the ligand; modified
+set of nucleotides with at least one heavy atom within the cutoff (default 6 A) of the ligand. Modified
 nucleotides are kept and listed. One row per pocket: geometry (eigenvalues, ratios, radius of gyration),
 SHAPE archetype, composition and steps, base pairs, stacking, backbone links and secondary-structure motifs.
 
@@ -45,8 +45,8 @@ def check_pdb_file(pdb_file):
 
 
 def describe_structure(pdb_file, pockets_dir, cutoff=6.0, level="residue"):
-    """List of descriptor rows (dicts) for the pockets of one PDB file; pocket files written in pockets_dir.
-    Raises an error for an unreadable file; returns [] for a readable structure without pockets."""
+    """List of descriptor rows (dicts) for the pockets of one PDB file, pocket files written in pockets_dir.
+    Raises an error for an unreadable file and returns [] for a readable structure without pockets."""
     check_pdb_file(pdb_file)
     rows = []
     kept = [r for r in extract.process_structure(Path(pdb_file), None, "server", set(), Path(pockets_dir),
@@ -72,7 +72,7 @@ def describe_structure(pdb_file, pockets_dir, cutoff=6.0, level="residue"):
 def describe_pocket_file(pdb_file, pockets_dir):
     """One descriptor row for an already extracted pocket. Kept: the nucleotides of the file (A/U/G/C, and
     modified nucleotides recognised by their C1' atom), heavy atoms, first model, one conformer per atom
-    (highest occupancy), i.e. the atlas definition; ligand, water and ions are ignored. Base pairs, stacking,
+    (highest occupancy), i.e. the atlas definition. Ligand, water and ions are ignored. Base pairs, stacking,
     backbone-dependent motifs need the whole structure and are left empty, as on the web server."""
     check_pdb_file(pdb_file)
     pdb_file = Path(pdb_file)
@@ -108,9 +108,9 @@ def main(argv=None):
     ap.add_argument("--pockets-dir", type=Path, help="also write each pocket as DIR/pockets/<pdb>/<pocket>/pocket.pdb")
     ap.add_argument("--cutoff", type=float, default=6.0, help="distance cutoff in A (atlas: 6.0)")
     ap.add_argument("--level", choices=["residue", "atom"], default="residue",
-                    help="residue: whole nucleotides (atlas); atom: only atoms within the cutoff")
+                    help="residue: whole nucleotides (atlas), atom: only atoms within the cutoff")
     ap.add_argument("--pocket-files", action="store_true",
-                    help="inputs are already extracted pockets (no extraction; interactions and motifs left empty)")
+                    help="inputs are already extracted pockets (no extraction, interactions and motifs left empty)")
     a = ap.parse_args(argv)
     rows, failed, empty = [], [], []
     with tempfile.TemporaryDirectory() as tmp:

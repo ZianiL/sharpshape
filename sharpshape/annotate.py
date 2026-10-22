@@ -2,11 +2,11 @@
 definitions of the RNA pocket atlas (open-source annotation, October 2026):
 
   base pairs     RNApolis 0.16.17 annotator (--find-gaps --decompose-pseudoknot-free) on a first-model,
-                 heavy-atom copy of the structure; canonical = Watson-Crick + G-U wobble (Saenger XIX, XX,
-                 XXVIII), all others non-canonical; both nucleotides in the pocket
+                 heavy-atom copy of the structure. Canonical = Watson-Crick + G-U wobble (Saenger XIX, XX,
+                 XXVIII), all others non-canonical. Both nucleotides in the pocket
   stem           nucleotide paired in a stem of >= 2 canonical pairs, pseudoknotted stems included
   loops          unpaired nucleotide of a hairpin, or of a loop typed by its number of strands
-                 (>= 3 junction; 2 = bulge if one strand has no unpaired nucleotide, else internal loop)
+                 (>= 3: junction, 2: bulge if one strand has no unpaired nucleotide, else internal loop)
   ss-non-loop    unpaired nucleotide outside any loop
   pseudoknotted  nucleotide with a pseudoknot bracket in the dot-bracket
   stacking       RNApolis 0.4.10 annotator (the version used for the atlas), both nucleotides in the pocket
@@ -97,7 +97,7 @@ def parse_rnapolis(js):
     idx = {int(i): rid(v) for i, v in js["bpseq_index"].items()}
     lines = js["dot_bracket"].strip().split("\n")  # header / sequence / structure per strand
     dbn = "".join(lines[i + 2] for i in range(0, len(lines) - 2, 3) if lines[i].startswith(">strand"))
-    # the dot-bracket also has unresolved residues ('?'); bpseq_index gives the positions of resolved ones
+    # the dot-bracket also has unresolved residues ('?'), and bpseq_index gives the positions of resolved ones
     char = {idx[i]: dbn[i - 1] for i in idx if i <= len(dbn)}
     lab = {r: set() for r in char}
     for st in js["stems"] + js.get("pseudoknot_stems", []):

@@ -1,28 +1,28 @@
 """Ligand-guided RNA pocket extraction (reproducible version of the atlas protocol).
 
 Same logic as Data_generation/.../2ndversion_LIG-RESOLV/extract_residprox_allresidtypes_noH_conf-altoptimal_lig-resolv.py
-(ligand = non-polymer HETATM residue; pocket = whole residues with >= 1 heavy atom within 6 A of the
-ligand; first model; hydrogens removed), with the errors found during the October 2026 check fixed:
+(ligand = non-polymer HETATM residue, pocket = whole residues with >= 1 heavy atom within 6 A of the
+ligand, first model, hydrogens removed), with the errors found during the October 2026 check fixed:
 
   F1  a HETATM residue covalently linked to the RNA backbone (O3'-P <= 2.0 A with a nucleotide) is
       part of the RNA, not a ligand (5'-triphosphate G declared as a separate entity, in-chain modified
       nucleotides numbered differently from the mmCIF polymer sequence)
   F2  modified nucleotides inside the 6 A shell are detected explicitly instead of being dropped with
-      the HETATM lines; paper mode excludes the pocket, server mode keeps them in the pocket
+      the HETATM lines. Paper mode excludes the pocket, server mode keeps them in the pocket
   F3  ligand alternate locations: atoms without altloc + altloc A (or the first altloc), instead of
       altloc A only
 
 Modes
-  paper   ligands restricted to the HARIBOSS compound list (--ligand-list), OXV/Y59 removed (no SMILES);
-          pockets containing a modified nucleotide are excluded; >= 2 canonical nucleotides
-  server  any non-polymer, non-solvent, non-covalent ligand; modified nucleotides kept in the pocket
-          (flagged); >= 2 nucleotides; mmCIF optional (polymer detected from ATOM records + covalent links)
+  paper   ligands restricted to the HARIBOSS compound list (--ligand-list), OXV/Y59 removed (no SMILES),
+          pockets containing a modified nucleotide excluded, >= 2 canonical nucleotides
+  server  any non-polymer, non-solvent, non-covalent ligand, modified nucleotides kept in the pocket
+          (flagged), >= 2 nucleotides, mmCIF optional (polymer detected from ATOM records + covalent links)
 
 Usage
   python3 pipeline/extract_pockets.py --pdb-dir DIR --cif-dir DIR --out DIR --mode paper --ligand-list FILE
 Outputs (in --out)
   pockets/<pdb>/<LIG>_<num>-<chain>/pocket.pdb   RNA residues of the pocket (one conformer per atom:
-                                                 highest occupancy, first on ties; as Biopython reads it)
+                                                 highest occupancy, first on ties, as Biopython reads it)
   pockets/<pdb>/<LIG>_<num>-<chain>/resid.txt    nucleotide IDs <chain><resname><resnum>, sorted
   pockets_index.csv   one row per ligand instance: status (kept / reason excluded), counts, geometry
 """
@@ -116,8 +116,8 @@ def geometry(xyz):
 
 
 def process_structure(pdb_file, cif_file, mode, ligand_list, out_dir, cutoff=CUTOFF, level="residue"):
-    """level='residue': whole residues (paper); level='atom': only the atoms within the cutoff
-    (server option). The cutoff is 6 A for the paper; the server allows 4-7 A."""
+    """level='residue': whole residues (paper), level='atom': only the atoms within the cutoff
+    (server option). The cutoff is 6 A for the paper, and the server allows 4-7 A."""
     pdb = pdb_file.stem.lower()
     res = read_first_model(pdb_file)
     linked = covalent_nucleotides(res)

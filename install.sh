@@ -2,7 +2,7 @@
 # Install sharpshape without root rights, inside this folder:
 #   .venv/                    the sharpshape command (+ RNApolis 0.4.10 for stacking), pinned versions
 #   tools/rnapolis-0.16.17/   RNApolis 0.16.17 annotator (base pairs, secondary structure), pinned versions
-# Needs Python >= 3.12 (python3.12 on PATH); if it is missing, uv is installed in ~/.local/bin and downloads it.
+# Needs Python >= 3.12 (python3.12 on PATH). If it is missing, uv is installed in ~/.local/bin and downloads it.
 # Usage: bash install.sh        (idempotent: re-running is harmless)
 set -euo pipefail
 cd "$(dirname "$0")"
