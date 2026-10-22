@@ -14,7 +14,7 @@ Give it an RNA-ligand structure (PDB file). For each bound small molecule, `shar
 
 1. **extracts the pocket**: the RNA nucleotides with at least one heavy atom within 6 Å of the ligand.
 2. **describes its shape**: eigenvalues of the atom coordinates, size-independent ratios (rEV21, rEV32, rEV31) and the
-   SHAPE archetype (sphere, disc, rod or anisotropic).
+   shape archetype (sphere, disk, rod or anisotropic).
 3. **describes its RNA structure**: base pairs (canonical and non-canonical), stacking, backbone links,
    secondary-structure motifs (stems, loops, junctions, pseudoknots) and nucleotide composition.
 
@@ -31,7 +31,7 @@ and for many structures at once.
 ## Contents
 
 [Quick start](#quick-start) · [Example](#example) · [Usage](#usage) · [Output](#output-one-row-per-pocket) ·
-[SHAPE archetypes](#shape-archetypes) · [Validation](#validation) · [Troubleshooting](#troubleshooting) ·
+[Shape archetypes](#shape-archetypes) · [Validation](#validation) · [Troubleshooting](#troubleshooting) ·
 [How to cite](#how-to-cite) · [Licence](#licence) · [Contact](#contact)
 
 ## Quick start
@@ -118,7 +118,7 @@ pockets containing them. Pocket name: `<ligand>_<residue number>-<chain>`.
 | `Num_Residues`, `Num_Atoms` | size: nucleotides and heavy atoms of the pocket |
 | `EV1`, `EV2`, `EV3`, `R_gyration` | eigenvalues of the covariance matrix of the atom coordinates (largest first), radius of gyration = √(EV1 + EV2 + EV3) |
 | `rEV21`, `rEV32`, `rEV31` | shape ratios EV2/EV1 (elongation), EV3/EV2 (cross-section) and EV3/EV1, between 0 and 1, independent of size |
-| `archetype` | SHAPE archetype: `sphere`, `disc`, `rod` or `anisotropic` (see below) |
+| `archetype` | shape archetype: `sphere`, `disk`, `rod` or `anisotropic` (see below) |
 | `canonical.bp`, `non.canonical.bp` | base pairs with both nucleotides in the pocket. Canonical: Watson-Crick and G-U wobble (Saenger XIX, XX, XXVIII) |
 | `stacking` | stacked nucleotide pairs within the pocket |
 | `covalent.bonds` | backbone links between consecutive pocket nucleotides (O3′-P ≤ 2.0 Å), not ligand bonds |
@@ -131,16 +131,16 @@ pockets containing them. Pocket name: `<ligand>_<residue number>-<chain>`.
 Annotation tools: base pairs and secondary structure come from RNApolis 0.16.17 (`--find-gaps --decompose-pseudoknot-free`), and stacking from RNApolis 0.4.10, as in the atlas. Stems have at least 2 canonical
 pairs, including pseudoknotted stems, and loops are typed by their number of strands.
 
-## SHAPE archetypes
+## Shape archetypes
 
 The shape of a pocket is summarized by two size-independent ratios of the eigenvalues of its atom coordinates: rEV21
 (how elongated it is) and rEV32 (how round its cross-section is). Splitting each ratio at its median over the
-non-redundant subset of the atlas (rEV21 = 0.5745, rEV32 = 0.5433) gives four archetypes:
+reference subset of the atlas (278 pockets: rEV21 = 0.5896, rEV32 = 0.5433) gives four archetypes:
 
 |  | rEV32 ≥ 0.5433 | rEV32 < 0.5433 |
 |---|---|---|
-| **rEV21 ≥ 0.5745** | `sphere` | `disc` |
-| **rEV21 < 0.5745** | `rod` | `anisotropic` (strongly anisotropic) |
+| **rEV21 ≥ 0.5896** | `sphere` | `disk` |
+| **rEV21 < 0.5896** | `rod` | `anisotropic` (strongly anisotropic) |
 
 The framework and its RNA/protein comparison are described in the method article (Ziani et al., *Comput. Struct.
 Biotechnol. J.* 2026). The thresholds used here are those of the RNA pocket atlas.

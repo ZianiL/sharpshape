@@ -3,7 +3,7 @@
 For each ligand (non-polymer, non-solvent HETATM residue not covalently linked to the RNA), the pocket is the
 set of nucleotides with at least one heavy atom within the cutoff (default 6 A) of the ligand. Modified
 nucleotides are kept and listed. One row per pocket: geometry (eigenvalues, ratios, radius of gyration),
-SHAPE archetype, composition and steps, base pairs, stacking, backbone links and secondary-structure motifs.
+shape archetype, composition and steps, base pairs, stacking, backbone links and secondary-structure motifs.
 
   sharpshape structure.pdb [more.pdb ...] -o pockets.csv [--pockets-dir DIR] [--cutoff 6] [--level residue]
   sharpshape --pocket-files pocket1.pdb [pocket2.pdb ...] -o pockets.csv
