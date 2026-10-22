@@ -2,14 +2,8 @@
 
 <p align="center">
   <b>Extract the small-molecule binding pockets of RNA structures and describe their shape and structure.</b><br>
-  Command-line companion of the <a href="https://sharpshape.rpbs.univ-paris-diderot.fr">SharpShape web server</a>.
-</p>
-
-<p align="center">
-  <a href="https://sharpshape.rpbs.univ-paris-diderot.fr"><img alt="Web server" src="https://img.shields.io/badge/web%20server-SharpShape-2f6fd0"></a>
-  <a href="LICENSE"><img alt="Licence: MIT" src="https://img.shields.io/badge/licence-MIT-3a9a3a"></a>
-  <img alt="Python 3.12" src="https://img.shields.io/badge/python-3.12-8e2c8e">
-  <a href="https://doi.org/10.34133/csbj.0022"><img alt="Method article" src="https://img.shields.io/badge/method-CSBJ%202026-c0392b"></a>
+  Command-line companion of the <a href="https://sharpshape.rpbs.univ-paris-diderot.fr">SharpShape web server</a>.<br>
+  Method: <a href="https://doi.org/10.34133/csbj.0022">Ziani et al., Comput. Struct. Biotechnol. J. 2026</a>.
 </p>
 
 ---
