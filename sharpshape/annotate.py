@@ -106,14 +106,22 @@ def parse_rnapolis(js):
                 for i in range(s["first"], s["last"] + 1):
                     if i in idx and char.get(idx[i], ".") != ".":
                         lab[idx[i]].add("stem")
+    # RNApolis concatenates the chains: a hairpin or loop with a strand that contains a chain end is not closed,
+    # so it is skipped and its unpaired nucleotides are labelled ss-non-loop (as in the atlas)
+    chain_of = {int(i): v["auth"]["chain"] for i, v in js["bpseq_index"].items()}
+    one_chain = lambda s: len({chain_of[i] for i in range(s["first"], s["last"] + 1) if i in chain_of}) == 1
     in_loop = set()
     for hp in js["hairpins"]:
+        if not one_chain(hp["strand"]):
+            continue
         for i in range(hp["strand"]["first"] + 1, hp["strand"]["last"]):
             if i in idx and char.get(idx[i]) == ".":
                 lab[idx[i]].add("hairpin-loop")
                 in_loop.add(idx[i])
     for lp in js["loops"]:
         strands = lp["strands"]
+        if not all(one_chain(s) for s in strands):
+            continue
         unpaired = [[idx[i] for i in range(s["first"], s["last"] + 1) if i in idx and char.get(idx[i]) == "."]
                     for s in strands]
         kind = ("junction-loop" if len(strands) >= 3 else
