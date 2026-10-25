@@ -1,34 +1,22 @@
-"""Ligand-guided RNA pocket extraction (reproducible version of the atlas protocol).
-
-Same logic as Data_generation/.../2ndversion_LIG-RESOLV/extract_residprox_allresidtypes_noH_conf-altoptimal_lig-resolv.py
-(ligand = non-polymer HETATM residue, pocket = whole residues with >= 1 heavy atom within 6 A of the
-ligand, first model, hydrogens removed), with the errors found during the October 2026 check fixed:
-
-  F1  a HETATM residue covalently linked to the RNA backbone (O3'-P <= 2.0 A with a nucleotide) is
-      part of the RNA, not a ligand (5'-triphosphate G declared as a separate entity, in-chain modified
-      nucleotides numbered differently from the mmCIF polymer sequence)
-  F2  modified nucleotides inside the 6 A shell are detected explicitly instead of being dropped with
-      the HETATM lines. Paper mode excludes the pocket, server mode keeps them in the pocket
-  F3  ligand alternate locations: atoms without altloc + altloc A (or the first altloc), instead of
-      altloc A only
-
-Modes
-  paper   ligands restricted to the HARIBOSS compound list (--ligand-list), OXV/Y59 removed (no SMILES),
-          pockets containing a modified nucleotide excluded, >= 2 canonical nucleotides
-  server  any non-polymer, non-solvent, non-covalent ligand, modified nucleotides kept in the pocket
-          (flagged), >= 2 nucleotides, mmCIF optional (polymer detected from ATOM records + covalent links)
-
-Usage
-  python3 pipeline/extract_pockets.py --pdb-dir DIR --cif-dir DIR --out DIR --mode paper --ligand-list FILE
-Outputs (in --out)
-  pockets/<pdb>/<LIG>_<num>-<chain>/pocket.pdb   RNA residues of the pocket (one conformer per atom:
-                                                 highest occupancy, first on ties, as Biopython reads it)
-  pockets/<pdb>/<LIG>_<num>-<chain>/resid.txt    nucleotide IDs <chain><resname><resnum>, sorted
-  pockets_index.csv   one row per ligand instance: status (kept / reason excluded), counts, geometry
 """
+Extract the ligand binding pockets of RNA structures.
+
+A ligand is a non-polymer, non-solvent HETATM residue that is not covalently linked to the RNA backbone
+(O3'-P <= 2.0 A). Its pocket is the set of nucleotides with at least one heavy atom within 6 A of the
+ligand (first model, hydrogens removed, ligand atoms without alternate location or with the first one).
+
+Modes:
+    paper   ligands of the HARIBOSS compound list (--ligand-list), pockets with a modified nucleotide
+            excluded, at least 2 nucleotides
+    server  any ligand, modified nucleotides kept in the pocket, at least 2 nucleotides
+
+Usage:
+    python -m sharpshape.extract --pdb-dir DIR --cif-dir DIR --out DIR --mode paper --ligand-list FILE
+
+Outputs in --out: pockets/<pdb>/<LIG>_<num>-<chain>/pocket.pdb and resid.txt, and pockets_index.csv.
+"""
+
 import argparse
-import re
-from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
@@ -36,7 +24,7 @@ import pandas as pd
 
 NT = {"A", "U", "G", "C"}
 SOLVENT = {"HOH", "WAT", "DOD", "NA", "K", "CL", "CA", "MG", "MN", "ZN", "CU", "FE", "CO", "NI", "CD",
-           "SR", "BA", "CS", "SO4", "PO4", "NO3", "CO3", "IOD", "BR"}  # identical to the original script
+           "SR", "BA", "CS", "SO4", "PO4", "NO3", "CO3", "IOD", "BR"}
 NO_SMILES = {"OXV", "Y59"}
 CUTOFF = 6.0
 O3P_MAX = 2.0
@@ -48,7 +36,7 @@ def is_hydrogen(line):
 
 
 def read_first_model(path):
-    """{residue key: {"rec": ATOM/HETATM, "atoms": [(name, altloc, occupancy, xyz, line)]}}"""
+    """Heavy atoms of the first model: {residue key: {"rec": ATOM/HETATM, "atoms": [(name, altloc, occupancy, xyz, line)]}}."""
     res = {}
     for line in open(path, errors="replace"):
         if line.startswith("ENDMDL"):
@@ -64,6 +52,7 @@ def read_first_model(path):
 
 
 def mmcif_polymer(cif):
+    """Residues of the polymer sequence of an mmCIF file."""
     if cif is None or not Path(cif).exists():
         return set()
     from Bio.PDB.MMCIF2Dict import MMCIF2Dict
@@ -85,7 +74,7 @@ def atom_xyz(r, name):
 
 
 def covalent_nucleotides(res):
-    """Nucleotide-like residues (A/U/G/C or with a C1' atom) joined to another one by O3'-P <= 2.0 A."""
+    """Nucleotide-like residues (A/U/G/C or with a C1' atom) linked to another one by O3'-P <= 2.0 A."""
     nucl = [k for k, r in res.items() if k[3] not in SOLVENT and (k[3] in NT or atom_xyz(r, "C1'") is not None)]
     o3 = [(k, atom_xyz(res[k], "O3'")) for k in nucl]
     ph = [(k, atom_xyz(res[k], "P")) for k in nucl]
@@ -95,13 +84,13 @@ def covalent_nucleotides(res):
     if o3 and ph:
         d = np.linalg.norm(np.array([v for _, v in o3])[:, None] - np.array([v for _, v in ph])[None], axis=2)
         for i, j in zip(*np.where(d <= O3P_MAX)):
-            if o3[i][0] != ph[j][0]:  # a 3'-phosphate on the same residue is not a link
+            if o3[i][0] != ph[j][0]:
                 linked.update((o3[i][0], ph[j][0]))
     return linked
 
 
 def one_conformer(atoms):
-    """One record per atom name: highest occupancy, first on ties (Biopython's behaviour)."""
+    """One record per atom name: highest occupancy, first one on ties."""
     best = {}
     for a in atoms:
         if a[0] not in best or a[2] > best[a[0]][2]:
@@ -110,14 +99,15 @@ def one_conformer(atoms):
 
 
 def geometry(xyz):
-    ev = np.sort(np.linalg.eigvalsh(np.cov(xyz, rowvar=False)))[::-1]  # n-1 covariance, as originally
+    """Eigenvalues of the coordinate covariance matrix, their ratios and the radius of gyration."""
+    ev = np.sort(np.linalg.eigvalsh(np.cov(xyz, rowvar=False)))[::-1]
     return {"EV1": ev[0], "EV2": ev[1], "EV3": ev[2], "rEV21": ev[1] / ev[0], "rEV32": ev[2] / ev[1],
             "rEV31": ev[2] / ev[0], "R_gyration": float(np.sqrt(ev.sum())), "Num_Atoms": len(xyz)}
 
 
 def process_structure(pdb_file, cif_file, mode, ligand_list, out_dir, cutoff=CUTOFF, level="residue"):
-    """level='residue': whole residues (paper), level='atom': only the atoms within the cutoff
-    (server option). The cutoff is 6 A for the paper, and the server allows 4-7 A."""
+    """Pockets of one structure (one row per ligand). level='residue': whole nucleotides,
+    level='atom': only the atoms within the cutoff."""
     pdb = pdb_file.stem.lower()
     res = read_first_model(pdb_file)
     linked = covalent_nucleotides(res)
@@ -129,6 +119,7 @@ def process_structure(pdb_file, cif_file, mode, ligand_list, out_dir, cutoff=CUT
     all_atoms = [a for k in keys for a in res[k]["atoms"]]
     all_xyz = np.array([a[3] for a in all_atoms])
     owner = [k for k in keys for _ in res[k]["atoms"]]
+
     rows = []
     for k, r in res.items():
         if r["rec"] != "HETATM" or k[3] in SOLVENT:
@@ -137,11 +128,12 @@ def process_structure(pdb_file, cif_file, mode, ligand_list, out_dir, cutoff=CUT
         name = f"{lig}_{num}-{ch}"
         row = {"PDB_Pocket": f"{pdb}_{name}", "PDB": pdb, "Pocket": name, "LIG": lig}
         if mode == "paper" and (lig not in ligand_list or lig in NO_SMILES):
-            continue  # not a HARIBOSS compound: not a candidate pocket
+            continue
         if k in polymer:
-            if k in linked and k not in mmcif_poly:  # recorded: named as a ligand but part of the RNA (rule F1)
+            if k in linked and k not in mmcif_poly:
                 rows.append({**row, "status": "not a ligand: covalently linked to the RNA backbone"})
             continue
+
         alts = sorted({a[1] for a in r["atoms"]} - {" "})
         keep_alt = "A" if "A" in alts else (alts[0] if alts else " ")
         lx = np.array([a[3] for a in r["atoms"] if a[1] in (" ", keep_alt)])
@@ -153,6 +145,7 @@ def process_structure(pdb_file, cif_file, mode, ligand_list, out_dir, cutoff=CUT
         row.update({"n_canonical_nt": len(canon), "n_modified_nt": len(mods),
                     "modified_nt": ";".join(f"{s[0]}{s[3]}{s[1]}" for s in mods)})
         members = canon + (mods if mode == "server" else [])
+
         if mode == "paper" and mods:
             row["status"] = "excluded: modified nucleotide within 6 A"
         elif len(members) < 2:
@@ -186,6 +179,7 @@ def main():
     ap.add_argument("--cutoff", type=float, default=CUTOFF, help="distance cutoff in A (paper: 6.0)")
     ap.add_argument("--level", choices=["residue", "atom"], default="residue")
     args = ap.parse_args()
+
     ligs = {l.strip() for l in open(args.ligand_list) if l.strip()} if args.ligand_list else set()
     if args.mode == "paper" and not ligs:
         raise SystemExit("paper mode needs --ligand-list")

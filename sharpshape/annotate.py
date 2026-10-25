@@ -1,21 +1,19 @@
-"""Base pairs, stacking, backbone links and secondary-structure motifs of pocket nucleotides, with the
-definitions of the RNA pocket atlas (open-source annotation, October 2026):
-
-  base pairs     RNApolis 0.16.17 annotator (--find-gaps --decompose-pseudoknot-free) on a first-model,
-                 heavy-atom copy of the structure. Canonical = Watson-Crick + G-U wobble (Saenger XIX, XX,
-                 XXVIII), all others non-canonical. Both nucleotides in the pocket
-  stem           nucleotide paired in a stem of >= 2 canonical pairs, pseudoknotted stems included
-  loops          unpaired nucleotide of a hairpin, or of a loop typed by its number of strands
-                 (>= 3: junction, 2: bulge if one strand has no unpaired nucleotide, else internal loop)
-  ss-non-loop    unpaired nucleotide outside any loop
-  pseudoknotted  nucleotide with a pseudoknot bracket in the dot-bracket
-  stacking       RNApolis 0.4.10 annotator (the version used for the atlas), both nucleotides in the pocket
-  covalent bonds backbone links O3'(i)-P(j) <= 2.0 A between pocket nucleotides
-
-RNApolis 0.16.17 runs from its own environment (tools/rnapolis-0.16.17, created by install.sh), because
-the package environment keeps RNApolis 0.4.10 for stacking. Residue IDs: chain + residue name + number.
-Same code as the SharpShape web server (scripts/pocket_interactions_ss.py).
 """
+Base pairs, stacking, backbone links and secondary-structure motifs of the pocket nucleotides.
+
+- Base pairs: RNApolis 0.16.17 annotator (--decompose-pseudoknot-free) on the first model, heavy atoms.
+  Canonical = Watson-Crick and G-U wobble (Saenger XIX, XX, XXVIII), the others are non-canonical.
+- Stem: nucleotide paired in a stem of at least 2 base pairs (pseudoknotted stems included).
+- Loops: unpaired nucleotide of a hairpin, or of a loop typed by its number of strands (3 or more: junction,
+  2: bulge if one strand has no unpaired nucleotide, otherwise internal loop). Loops with a strand that
+  contains a chain end are not loops.
+- ss-non-loop: unpaired nucleotide outside any loop. pseudoknotted: pseudoknot bracket in the dot-bracket.
+- Stacking: RNApolis 0.4.10 annotator. Backbone links: O3'(i)-P(j) <= 2.0 A.
+
+Base pairs, stacking and links are counted when both nucleotides are in the pocket.
+RNApolis 0.16.17 runs from its own environment (tools/rnapolis-0.16.17, created by install.sh).
+"""
+
 import json
 import os
 import subprocess
@@ -25,7 +23,7 @@ import tempfile
 from Bio.PDB import PDBParser
 
 SS_CATEGORIES = ["stem", "bulge", "hairpin-loop", "internal-loop", "junction-loop", "ss-non-loop", "pseudoknotted"]
-CANONICAL_SAENGER = {"XIX", "XX", "XXVIII"}  # Watson-Crick A-U, G-C and G-U wobble (Saenger classes)
+CANONICAL_SAENGER = {"XIX", "XX", "XXVIII"}
 REPO_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -74,7 +72,7 @@ def run_rnapolis(full_pdb, workdir):
 
 
 def run_stacking(full_pdb, workdir):
-    """RNApolis 0.4.10 annotator of the package environment on the full structure -> [(resid1, resid2)]."""
+    """Stacked nucleotide pairs from the RNApolis 0.4.10 annotator of the package environment."""
     annotator = os.path.join(os.path.dirname(sys.executable), "annotator")
     csv_file = os.path.join(workdir, "stacking.csv")
     subprocess.run([annotator, "--csv", csv_file, full_pdb], check=True, capture_output=True, text=True)
@@ -89,27 +87,29 @@ def run_stacking(full_pdb, workdir):
 
 
 def parse_rnapolis(js):
-    """(labels {resid: set of SS categories}, [(resid1, resid2, canonical)])."""
+    """Secondary-structure labels {resid: set of categories} and base pairs [(resid1, resid2, canonical)]."""
     def rid(nt):
         a = nt["auth"]
         return f"{a['chain']}{a['name']}{a['number']}"
 
     idx = {int(i): rid(v) for i, v in js["bpseq_index"].items()}
-    lines = js["dot_bracket"].strip().split("\n")  # header / sequence / structure per strand
+    lines = js["dot_bracket"].strip().split("\n")
     dbn = "".join(lines[i + 2] for i in range(0, len(lines) - 2, 3) if lines[i].startswith(">strand"))
-    # the dot-bracket also has unresolved residues ('?'), and bpseq_index gives the positions of resolved ones
     char = {idx[i]: dbn[i - 1] for i in idx if i <= len(dbn)}
     lab = {r: set() for r in char}
+
     for st in js["stems"] + js.get("pseudoknot_stems", []):
         if len(st["strand5p"]["sequence"]) >= 2:
             for s in (st["strand5p"], st["strand3p"]):
                 for i in range(s["first"], s["last"] + 1):
                     if i in idx and char.get(idx[i], ".") != ".":
                         lab[idx[i]].add("stem")
-    # RNApolis concatenates the chains: a hairpin or loop with a strand that contains a chain end is not closed,
-    # so it is skipped and its unpaired nucleotides are labelled ss-non-loop (as in the atlas)
+
     chain_of = {int(i): v["auth"]["chain"] for i, v in js["bpseq_index"].items()}
-    one_chain = lambda s: len({chain_of[i] for i in range(s["first"], s["last"] + 1) if i in chain_of}) == 1
+
+    def one_chain(s):
+        return len({chain_of[i] for i in range(s["first"], s["last"] + 1) if i in chain_of}) == 1
+
     in_loop = set()
     for hp in js["hairpins"]:
         if not one_chain(hp["strand"]):
@@ -130,12 +130,14 @@ def parse_rnapolis(js):
             for k in u:
                 lab[k].add(kind)
                 in_loop.add(k)
+
     for k, c in char.items():
         if c == "." and k not in in_loop:
             lab[k].add("ss-non-loop")
         if c not in "().":
             lab[k].add("pseudoknotted")
-    pairs = {}  # one entry per nucleotide pair
+
+    pairs = {}
     for bp in js["base_pairs"]:
         pairs[frozenset((rid(bp["nt1"]), rid(bp["nt2"])))] = bp.get("saenger") in CANONICAL_SAENGER
     return lab, [(*sorted(p), c) for p, c in pairs.items() if len(p) == 2]
@@ -167,7 +169,10 @@ class StructureAnnotation:
 
     def describe(self, pocket_resids):
         ps = set(pocket_resids)
-        inside = lambda pairs: [p for p in pairs if p[0] in ps and p[1] in ps]  # noqa: E731
+
+        def inside(pairs):
+            return [p for p in pairs if p[0] in ps and p[1] in ps]
+
         bp = inside([p for p in self.pairs if p[0] != p[1]])
         return {
             "canonical.bp": sum(1 for p in bp if p[2]),

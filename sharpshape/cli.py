@@ -1,16 +1,18 @@
-"""sharpshape: extract the small-molecule binding pockets of RNA structures and compute their descriptors.
-
-For each ligand (non-polymer, non-solvent HETATM residue not covalently linked to the RNA), the pocket is the
-set of nucleotides with at least one heavy atom within the cutoff (default 6 A) of the ligand. Modified
-nucleotides are kept and listed. One row per pocket: geometry (eigenvalues, ratios, radius of gyration),
-shape archetype, composition and steps, base pairs, stacking, backbone links and secondary-structure motifs.
-
-  sharpshape structure.pdb [more.pdb ...] -o pockets.csv [--pockets-dir DIR] [--cutoff 6] [--level residue]
-  sharpshape --pocket-files pocket1.pdb [pocket2.pdb ...] -o pockets.csv
-
-With --pocket-files, each input is an already extracted pocket: size, shape, archetype and composition are
-computed (base pairs, stacking, backbone links and secondary-structure motifs need the whole structure).
 """
+sharpshape: extract the small molecule binding pockets of RNA structures and compute their descriptors.
+
+The pocket of a ligand is the set of nucleotides with at least one heavy atom within the cutoff (default 6 A).
+One row per pocket: size, eigenvalues and ratios, radius of gyration, shape archetype, composition and steps,
+base pairs, stacking, backbone links and secondary-structure motifs.
+
+Usage:
+    sharpshape structure.pdb [more.pdb ...] -o pockets.csv [--pockets-dir DIR] [--cutoff 6] [--level residue]
+    sharpshape --pocket-files pocket1.pdb [pocket2.pdb ...] -o pockets.csv
+
+With --pocket-files, each input is an already extracted pocket: base pairs, stacking, backbone links and
+secondary-structure motifs need the whole structure and are not computed.
+"""
+
 import argparse
 import sys
 import tempfile
@@ -28,8 +30,7 @@ GEOMETRY = ["Num_Residues", "Num_Atoms", "EV1", "EV2", "EV3", "rEV21", "rEV32", 
 
 
 def check_pdb_file(pdb_file):
-    """Raise ValueError if the file cannot be a PDB-format structure (so that it is reported as a failure,
-    not as a structure without pockets)."""
+    """Raise ValueError if the file is not a PDB-format structure."""
     n_atoms, first = 0, ""
     with open(pdb_file, errors="replace") as f:
         for line in f:
@@ -45,8 +46,7 @@ def check_pdb_file(pdb_file):
 
 
 def describe_structure(pdb_file, pockets_dir, cutoff=6.0, level="residue"):
-    """List of descriptor rows (dicts) for the pockets of one PDB file, pocket files written in pockets_dir.
-    Raises an error for an unreadable file and returns [] for a readable structure without pockets."""
+    """Descriptors of the pockets of one structure, pocket files written in pockets_dir."""
     check_pdb_file(pdb_file)
     rows = []
     kept = [r for r in extract.process_structure(Path(pdb_file), None, "server", set(), Path(pockets_dir),
@@ -70,10 +70,8 @@ def describe_structure(pdb_file, pockets_dir, cutoff=6.0, level="residue"):
 
 
 def describe_pocket_file(pdb_file, pockets_dir):
-    """One descriptor row for an already extracted pocket. Kept: the nucleotides of the file (A/U/G/C, and
-    modified nucleotides recognised by their C1' atom), heavy atoms, first model, one conformer per atom
-    (highest occupancy), i.e. the atlas definition. Ligand, water and ions are ignored. Base pairs, stacking,
-    backbone-dependent motifs need the whole structure and are left empty, as on the web server."""
+    """Descriptors of an already extracted pocket: its nucleotides (A/U/G/C, and modified nucleotides with a
+    C1' atom), heavy atoms, first model, one conformer per atom."""
     check_pdb_file(pdb_file)
     pdb_file = Path(pdb_file)
     res = extract.read_first_model(pdb_file)
@@ -112,6 +110,7 @@ def main(argv=None):
     ap.add_argument("--pocket-files", action="store_true",
                     help="inputs are already extracted pockets (no extraction, interactions and motifs left empty)")
     a = ap.parse_args(argv)
+
     rows, failed, empty = [], [], []
     with tempfile.TemporaryDirectory() as tmp:
         out_dir = a.pockets_dir or Path(tmp)
@@ -122,7 +121,7 @@ def main(argv=None):
                     new = [row] if row else []
                 else:
                     new = describe_structure(f, out_dir, a.cutoff, a.level)
-            except Exception as e:  # keep going with the other structures
+            except Exception as e:
                 print(f"{f}: ERROR - {e}", file=sys.stderr)
                 failed.append(f)
                 continue
@@ -133,6 +132,7 @@ def main(argv=None):
                 print(f"{f}: no pocket ({why})", file=sys.stderr)
                 empty.append(f)
             rows += new
+
     pd.DataFrame(rows).to_csv(a.output, index=False)
     n_ok = len(a.pdb) - len(failed)
     print(f"\n{len(rows)} pocket(s) written to {a.output} | {len(a.pdb)} file(s): {n_ok} read "
