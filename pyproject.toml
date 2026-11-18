@@ -3,9 +3,9 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-license = { text = "MIT" }
+license = { text = "AGPL-3.0-only" }
 name = "sharpshape"
-version = "1.0.0"
+version = "1.1.0"
 description = "RNA small-molecule binding pocket extraction and descriptors (RNA pocket atlas definitions)"
 requires-python = ">=3.12"
 dependencies = ["numpy", "pandas", "biopython", "rnapolis==0.4.10"]

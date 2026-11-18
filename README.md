@@ -179,14 +179,18 @@ If you use sharpshape, please cite:
 - Ziani L, Badel A, Dufay L, Flatters D, Regad L, Camproux A-C. Eigenvalue ratios reveal shared binding pocket shapes in
   RNA and protein structures. *Comput. Struct. Biotechnol. J.* 2026;35:0022.
   [doi:10.34133/csbj.0022](https://doi.org/10.34133/csbj.0022)
-- the RNA pocket atlas article (Ziani et al., in preparation).
+- the RNA pocket atlas article (Ziani et al., submitted).
 
 GitHub's "Cite this repository" button (from `CITATION.cff`) gives the reference of this software.
 
 ## Licence
 
-MIT licence (see [`LICENSE`](LICENSE)). The atlas data are distributed separately under CC BY 4.0 (Zenodo record of the
-article).
+Copyright (C) 2026 Leïla Ziani, Anne Badel, Samuela Pasquali, Delphine Flatters, Anne-Claude Camproux.
+
+From version 1.1.0, sharpshape is distributed under the GNU Affero General Public License, version 3 only
+(AGPL-3.0-only, see [`LICENSE`](LICENSE)). Versions up to 1.0.0 were released under the MIT licence. The atlas data are
+distributed separately under the Creative Commons Attribution-NonCommercial 4.0 International licence (CC BY-NC 4.0,
+Zenodo record of the article).
 
 Third-party software, installed by `install.sh` and not redistributed here (licences as declared in each package):
 RNApolis (MIT), Biopython (Biopython License Agreement), NumPy and pandas (BSD 3-Clause), PuLP (BSD) with its bundled CBC
